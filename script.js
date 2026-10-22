@@ -366,6 +366,23 @@ function updateRequestTypeLabels() {
         isComplaint ? "اكتب شكواك هنا" : "اكتب استفسارك هنا";
 }
 
+// إضافة عنوان عمود "النوع" إذا كانت الصفحة نسخة قديمة محفوظة في المتصفح
+function ensureTypeHeader() {
+
+    const headerRow =
+        document.querySelector("#inquiriesTable thead tr");
+
+    if (!headerRow || headerRow.children.length >= 7) {
+        return;
+    }
+
+    const typeHeader = document.createElement("th");
+
+    typeHeader.textContent = "النوع";
+
+    headerRow.insertBefore(typeHeader, headerRow.children[2]);
+}
+
 // شارة ملونة لنوع الطلب في صفحة المتابعة
 // الطلبات القديمة بدون نوع تعتبر استفسار
 function createTypeBadge(type) {
@@ -600,6 +617,8 @@ function displayInquiries() {
         addCell(index + 1);
         addCell(record.name);
 
+        ensureTypeHeader();
+
         const typeCell = document.createElement("td");
 
         typeCell.appendChild(createTypeBadge(record.type));
@@ -680,11 +699,15 @@ function openInquiry(id) {
     document.getElementById("detailName").textContent =
         record.name || "";
 
+    // قد تكون الصفحة نسخة قديمة محفوظة في المتصفح بدون خانة النوع
     const detailType = document.getElementById("detailType");
 
-    detailType.innerHTML = "";
+    if (detailType) {
 
-    detailType.appendChild(createTypeBadge(record.type));
+        detailType.innerHTML = "";
+
+        detailType.appendChild(createTypeBadge(record.type));
+    }
 
     document.getElementById("detailPhone").textContent =
         record.phone || "";

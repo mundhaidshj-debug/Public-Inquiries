@@ -8,7 +8,7 @@
 
     <title>استفسارات المتعاملين</title>
 
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 
 <body>
@@ -104,6 +104,32 @@
 
                 <h2>تفاصيل الاستفسار</h2>
 
+                <!-- نوع الطلب: استفسار أو شكوى -->
+                <span class="clint">نوع الطلب</span>
+
+                <div class="type-options">
+
+                    <label class="type-option type-inquiry">
+                        <input
+                            type="radio"
+                            name="requestType"
+                            value="استفسار"
+                            checked
+                            onchange="updateRequestTypeLabels()">
+                        استفسار
+                    </label>
+
+                    <label class="type-option type-complaint">
+                        <input
+                            type="radio"
+                            name="requestType"
+                            value="شكوى"
+                            onchange="updateRequestTypeLabels()">
+                        شكوى
+                    </label>
+
+                </div>
+
                 <label class="clint" for="employeeName">
                     اسم الموظف الذي تم الاستفسار منه
                 </label>
@@ -113,7 +139,7 @@
                     id="employeeName"
                     placeholder="اكتب اسم الموظف">
 
-                <label class="clint" for="inquiry">
+                <label class="clint" for="inquiry" id="inquiryLabel">
                     الاستفسار
                 </label>
 
@@ -146,7 +172,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
-    <script src="script.js?v=6"></script>
+    <script src="script.js?v=7"></script>
 
 </body>
 </html>

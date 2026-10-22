@@ -238,8 +238,10 @@ async function sendInquiry() {
     const employee = employeeInput.value.trim();
     const inquiry = inquiryInput.value.trim();
 
+    const type = getSelectedRequestType();
+
     if (!employee || !inquiry) {
-        alert("يرجى إدخال اسم الموظف والاستفسار");
+        alert("يرجى إدخال اسم الموظف و" + (type === "شكوى" ? "الشكوى" : "الاستفسار"));
         return;
     }
 
@@ -266,6 +268,9 @@ async function sendInquiry() {
         employee: employee,
 
         inquiry: inquiry,
+
+        // نوع الطلب: استفسار أو شكوى
+        type: type,
 
         // التاريخ بصيغة ثابتة لاستخدامه في الفلترة
         isoDate: toIsoDate(new Date()),
@@ -295,10 +300,14 @@ async function sendInquiry() {
             .set(record);
 
         message.textContent =
-            "تم تسجيل الاستفسار بنجاح";
+            type === "شكوى"
+                ? "تم تسجيل الشكوى بنجاح"
+                : "تم تسجيل الاستفسار بنجاح";
 
         employeeInput.disabled = true;
         inquiryInput.disabled = true;
+
+        setRequestTypeDisabled(true);
 
         const newButton =
             document.getElementById("newInquiryButton");
@@ -325,6 +334,57 @@ async function sendInquiry() {
 
 
 // ==========================================
+// 4-ب. نوع الطلب (استفسار / شكوى)
+// ==========================================
+
+function getSelectedRequestType() {
+
+    const selected = document.querySelector(
+        'input[name="requestType"]:checked'
+    );
+
+    return selected ? selected.value : "استفسار";
+}
+
+function setRequestTypeDisabled(disabled) {
+
+    document.querySelectorAll('input[name="requestType"]')
+        .forEach(input => {
+            input.disabled = disabled;
+        });
+}
+
+// تغيير عنوان الخانة حسب النوع المختار
+function updateRequestTypeLabels() {
+
+    const isComplaint = getSelectedRequestType() === "شكوى";
+
+    document.getElementById("inquiryLabel").textContent =
+        isComplaint ? "الشكوى" : "الاستفسار";
+
+    document.getElementById("inquiry").placeholder =
+        isComplaint ? "اكتب شكواك هنا" : "اكتب استفسارك هنا";
+}
+
+// شارة ملونة لنوع الطلب في صفحة المتابعة
+// الطلبات القديمة بدون نوع تعتبر استفسار
+function createTypeBadge(type) {
+
+    const badge = document.createElement("span");
+
+    const isComplaint = type === "شكوى";
+
+    badge.className = isComplaint
+        ? "type-badge type-badge-complaint"
+        : "type-badge type-badge-inquiry";
+
+    badge.textContent = isComplaint ? "شكوى" : "استفسار";
+
+    return badge;
+}
+
+
+// ==========================================
 // 5. تسجيل استفسار جديد
 // ==========================================
 
@@ -340,6 +400,15 @@ function showCustomerPage() {
 
     document.getElementById("inquiry").disabled =
         false;
+
+    // الرجوع إلى "استفسار" كاختيار افتراضي
+    setRequestTypeDisabled(false);
+
+    document.querySelector(
+        'input[name="requestType"][value="استفسار"]'
+    ).checked = true;
+
+    updateRequestTypeLabels();
 
     const sendButton =
         document.querySelector("#step2 button");
@@ -530,6 +599,12 @@ function displayInquiries() {
 
         addCell(index + 1);
         addCell(record.name);
+
+        const typeCell = document.createElement("td");
+
+        typeCell.appendChild(createTypeBadge(record.type));
+
+        row.appendChild(typeCell);
         addCell(record.date);
         addCell(record.employee);
 
@@ -604,6 +679,12 @@ function openInquiry(id) {
 
     document.getElementById("detailName").textContent =
         record.name || "";
+
+    const detailType = document.getElementById("detailType");
+
+    detailType.innerHTML = "";
+
+    detailType.appendChild(createTypeBadge(record.type));
 
     document.getElementById("detailPhone").textContent =
         record.phone || "";

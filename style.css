@@ -464,3 +464,74 @@ button:disabled {
     font-size: 12px;
     background: #a83232;
 }
+
+/* نوع الطلب: استفسار (بنفسجي) / شكوى (أحمر) */
+
+.type-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.type-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 2px solid #d8e5da;
+    border-radius: 12px;
+    background: #f8fbf8;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.type-option input {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+}
+
+.type-inquiry {
+    color: #6a3fa0;
+}
+
+.type-inquiry:has(input:checked) {
+    border-color: #6a3fa0;
+    background: #f1eafa;
+}
+
+.type-inquiry input {
+    accent-color: #6a3fa0;
+}
+
+.type-complaint {
+    color: #bd3030;
+}
+
+.type-complaint:has(input:checked) {
+    border-color: #bd3030;
+    background: #fde9e9;
+}
+
+.type-complaint input {
+    accent-color: #bd3030;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    color: #ffffff;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.type-badge-inquiry {
+    background: #6a3fa0;
+}
+
+.type-badge-complaint {
+    background: #c62828;
+}

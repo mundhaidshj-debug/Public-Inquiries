@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSystemAdmin() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email == 'mundhaidshj@gmail.com';
+    }
+
+    // الموظف = حساب أضافه مدير النظام إلى قائمة staff
+    function isStaff() {
+      return isSystemAdmin()
+        || (request.auth != null
+          && request.auth.token.firebase.sign_in_provider == 'password'
+          && exists(/databases/$(database)/documents/staff/$(request.auth.token.email)));
+    }
+
+    match /staff/{email} {
+      allow read: if isStaff();
+      allow write: if isSystemAdmin();
+    }
+
+    match /inquiries/{inquiryId} {
+      allow read: if isStaff();
+
+      allow create: if request.auth != null
+        && request.resource.data.status in ['لم يتم الرد', 'تم الرد']
+        && request.resource.data.name is string
+        && request.resource.data.inquiry is string
+        && request.resource.data.inquiry.size() < 5000;
+
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'replyNotes'])
+        && request.resource.data.status in ['لم يتم الرد', 'تم الرد'];
+
+      allow delete: if isSystemAdmin();
+    }
+  }
+}

@@ -8,7 +8,7 @@
 
     <title>خدمة المتعاملين</title>
 
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 
 <body>
@@ -29,8 +29,18 @@
                 إدارة الخدمات الفنية||استفسارك يهمنا
             </div>
 
+            <!-- التحقق من رمز QR -->
+            <p id="accessChecking" class="access-note">
+                جاري التحقق...
+            </p>
+
+            <!-- تظهر إذا فُتحت الصفحة بدون رمز QR صالح من الإدارة -->
+            <div id="accessBlocked" class="access-blocked" style="display:none;">
+                <p id="accessBlockedText"></p>
+            </div>
+
             <!-- المرحلة الأولى: بيانات المتعامل -->
-            <div id="step1">
+            <div id="step1" style="display:none;">
 
                 <label class="clint" for="customerName">
                     اسم المتعامل
@@ -172,7 +182,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 
 </body>
 </html>

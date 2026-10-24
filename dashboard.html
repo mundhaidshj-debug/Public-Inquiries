@@ -8,7 +8,7 @@
 
     <title>صفحة متابعة خدمة المتعاملين</title>
 
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 
 <body>
@@ -70,6 +70,11 @@
 
             <!-- محتوى الصفحة يظهر بعد تسجيل الدخول فقط -->
             <div id="staffContent" style="display:none;">
+
+            <!-- فتح شاشة QR للاستقبال -->
+            <a class="kiosk-link" href="kiosk.html" target="_blank">
+                فتح شاشة رمز QR للاستقبال
+            </a>
 
             <!-- إدارة الموظفين (لمدير النظام فقط) -->
             <div class="admin-box" id="staffManager" style="display:none;">
@@ -317,7 +322,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 
 </body>
 </html>

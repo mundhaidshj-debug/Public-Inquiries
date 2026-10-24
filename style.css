@@ -535,3 +535,58 @@ button:disabled {
 .type-badge-complaint {
     background: #c62828;
 }
+
+/* رمز QR ورسائل الوصول */
+
+.access-note {
+    text-align: center;
+    color: #84978a;
+}
+
+.access-blocked {
+    margin-top: 10px;
+    padding: 24px 18px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.9;
+    color: #6a3fa0;
+    background: #f1eafa;
+    border: 1px solid #d9c8ef;
+    border-radius: 16px;
+}
+
+.qr-box {
+    text-align: center;
+}
+
+.qr-code {
+    display: flex;
+    justify-content: center;
+    padding: 18px;
+    background: #ffffff;
+}
+
+.qr-code img,
+.qr-code canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+.qr-error {
+    text-align: center;
+    color: #bd3030;
+    font-weight: bold;
+}
+
+.kiosk-link {
+    display: block;
+    margin-top: 12px;
+    padding: 12px;
+    text-align: center;
+    border-radius: 12px;
+    background: #6a3fa0;
+    color: #ffffff;
+    font-weight: bold;
+    text-decoration: none;
+}

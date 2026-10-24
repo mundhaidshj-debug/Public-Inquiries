@@ -17,15 +17,33 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/staff/$(request.auth.token.email)));
     }
 
+    // المتعامل يحتاج رمز QR صالح لليوم (موجود عند الاستقبال)
+    function hasValidAccessCode() {
+      return request.resource.data.accessCode is string
+        && request.resource.data.accessCode.matches('[a-z0-9]{6,32}')
+        && exists(/databases/$(database)/documents/accessCodes/$(request.resource.data.accessCode))
+        && get(/databases/$(database)/documents/accessCodes/$(request.resource.data.accessCode)).data.expiresAt > request.time;
+    }
+
     match /staff/{email} {
       allow read: if isStaff();
       allow write: if isSystemAdmin();
+    }
+
+    // رموز QR: المتعامل يتحقق من رمزه فقط، ولا يستطيع رؤية قائمة الرموز
+    match /accessCodes/{code} {
+      allow get: if request.auth != null;
+      allow list: if isStaff();
+      allow create: if isStaff()
+        && request.resource.data.expiresAt is timestamp;
+      allow delete: if isStaff();
     }
 
     match /inquiries/{inquiryId} {
       allow read: if isStaff();
 
       allow create: if request.auth != null
+        && (isStaff() || hasValidAccessCode())
         && request.resource.data.status in ['لم يتم الرد', 'تم الرد']
         && request.resource.data.name is string
         && request.resource.data.inquiry is string

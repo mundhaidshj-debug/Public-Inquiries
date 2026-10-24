@@ -30,6 +30,12 @@ let stopListeningStaff = null;
 // قائمة الموظفين المسموح لهم (رقم المستند = إيميل الموظف)
 const STAFF_COLLECTION = "staff";
 
+// رموز الدخول اليومية (رقم المستند = الرمز نفسه)
+// تُعرض داخل QR على شاشة الاستقبال، والمتعامل لا يستطيع الإرسال بدونها
+const ACCESS_CODES_COLLECTION = "accessCodes";
+
+const ACCESS_CODE_KEY = "inquiryAccessCode";
+
 
 // ==========================================
 // 1. الاتصال بقاعدة البيانات
@@ -272,6 +278,9 @@ async function sendInquiry() {
         // نوع الطلب: استفسار أو شكوى
         type: type,
 
+        // رمز QR الذي مسحه المتعامل في الإدارة
+        accessCode: getStoredAccessCode(),
+
         // التاريخ بصيغة ثابتة لاستخدامه في الفلترة
         isoDate: toIsoDate(new Date()),
 
@@ -309,12 +318,11 @@ async function sendInquiry() {
 
         setRequestTypeDisabled(true);
 
-        const newButton =
-            document.getElementById("newInquiryButton");
+        // الرمز يُستخدم مرة واحدة: لطلب جديد يجب مسح QR مرة أخرى
+        clearStoredAccessCode();
 
-        if (newButton) {
-            newButton.style.display = "block";
-        }
+        message.textContent +=
+            " — لتقديم طلب آخر، امسح رمز QR الموجود في الإدارة مرة أخرى";
 
     } catch (error) {
 
@@ -322,13 +330,20 @@ async function sendInquiry() {
 
         message.textContent = "";
 
+        // الرفض يعني غالباً أن الرمز انتهى (من يوم سابق)
+        if (error && error.code === "permission-denied") {
+
+            clearStoredAccessCode();
+
+            showAccessBlocked(
+                "انتهت صلاحية الرمز. يرجى مسح رمز QR الموجود في الإدارة من جديد"
+            );
+            return;
+        }
+
         sendButton.disabled = false;
 
-        alert(
-            error && error.code === "permission-denied"
-                ? "تعذر حفظ الاستفسار: لا توجد صلاحية في قاعدة البيانات (تأكد من نشر firestore.rules)"
-                : "حدث خطأ أثناء حفظ الاستفسار، تأكد من الاتصال بالإنترنت وحاول مرة أخرى"
-        );
+        alert("حدث خطأ أثناء حفظ الاستفسار، تأكد من الاتصال بالإنترنت وحاول مرة أخرى");
     }
 }
 
@@ -824,13 +839,24 @@ document.addEventListener(
             )
         );
 
+        const isKiosk = Boolean(
+            document.getElementById("qrBox")
+        );
+
+        const isCustomerPage = !isDashboard && !isKiosk;
+
         if (isDashboard) {
             displayInquiries();
         }
 
+        // صفحة المتعامل: أخذ الرمز من رابط QR وإخفاؤه من شريط العنوان
+        if (isCustomerPage) {
+            captureAccessCodeFromUrl();
+        }
+
         try {
 
-            await initFirebase(!isDashboard);
+            await initFirebase(isCustomerPage);
 
         } catch (error) {
 
@@ -842,6 +868,14 @@ document.addEventListener(
 
         if (isDashboard) {
             firebase.auth().onAuthStateChanged(handleStaffAuthChange);
+        }
+
+        if (isKiosk) {
+            firebase.auth().onAuthStateChanged(handleKioskAuthChange);
+        }
+
+        if (isCustomerPage) {
+            await checkCustomerAccess();
         }
 
     }
@@ -1302,5 +1336,282 @@ async function deleteInquiry() {
     } catch (error) {
         console.error(error);
         alert("تعذر حذف الاستفسار");
+    }
+}
+
+
+// ==========================================
+// 15. رمز الدخول للمتعامل (من QR في الإدارة)
+// ==========================================
+
+// احتياطي إذا كان المتصفح يمنع sessionStorage
+let accessCodeInMemory = "";
+
+function getStoredAccessCode() {
+
+    try {
+        return sessionStorage.getItem(ACCESS_CODE_KEY) || "";
+    } catch (error) {
+        return accessCodeInMemory;
+    }
+}
+
+function storeAccessCode(code) {
+
+    accessCodeInMemory = code;
+
+    try {
+        sessionStorage.setItem(ACCESS_CODE_KEY, code);
+    } catch (error) {
+        // يكفي الحفظ في الذاكرة
+    }
+}
+
+function clearStoredAccessCode() {
+
+    accessCodeInMemory = "";
+
+    try {
+        sessionStorage.removeItem(ACCESS_CODE_KEY);
+    } catch (error) {
+        // لا شيء
+    }
+}
+
+// قراءة الرمز من رابط QR ثم حذفه من شريط العنوان
+// حتى لا يُنسخ الرابط مع الرمز بسهولة
+function captureAccessCodeFromUrl() {
+
+    const params = new URLSearchParams(location.search);
+
+    const code = (params.get("code") || "").trim().toLowerCase();
+
+    if (/^[a-z0-9]{6,32}$/.test(code)) {
+        storeAccessCode(code);
+    }
+
+    if (params.has("code")) {
+        history.replaceState(null, "", location.pathname);
+    }
+}
+
+// التأكد أن الرمز ما زال صالحاً قبل إظهار النموذج
+async function checkCustomerAccess() {
+
+    const code = getStoredAccessCode();
+
+    if (!code) {
+        showAccessBlocked(
+            "هذه الصفحة مخصصة لمراجعي الإدارة. يرجى مسح رمز QR الموجود في الإدارة"
+        );
+        return;
+    }
+
+    try {
+
+        const doc = await db.collection(ACCESS_CODES_COLLECTION)
+            .doc(code)
+            .get();
+
+        const expiresAt =
+            doc.exists && doc.data().expiresAt
+                ? doc.data().expiresAt.toDate()
+                : null;
+
+        if (!expiresAt || expiresAt <= new Date()) {
+
+            clearStoredAccessCode();
+
+            showAccessBlocked(
+                "انتهت صلاحية الرمز. يرجى مسح رمز QR الموجود في الإدارة من جديد"
+            );
+            return;
+        }
+
+    } catch (error) {
+        // عند انقطاع الاتصال نُظهر النموذج، والسيرفر يتحقق عند الإرسال
+        console.error("تعذر التحقق من الرمز:", error);
+    }
+
+    document.getElementById("accessChecking").style.display = "none";
+    document.getElementById("step1").style.display = "block";
+}
+
+function showAccessBlocked(text) {
+
+    document.getElementById("accessChecking").style.display = "none";
+    document.getElementById("step1").style.display = "none";
+    document.getElementById("step2").style.display = "none";
+
+    const blocked = document.getElementById("accessBlocked");
+
+    document.getElementById("accessBlockedText").textContent = text;
+
+    blocked.style.display = "block";
+}
+
+
+// ==========================================
+// 16. شاشة الاستقبال (QR يتغير كل يوم)
+// ==========================================
+
+let kioskTimer = null;
+let kioskCode = "";
+
+async function handleKioskAuthChange(user) {
+
+    updateAdminView();
+
+    const qrBox = document.getElementById("qrBox");
+
+    if (!isStaff(user) || !(await hasStaffAccess(user))) {
+
+        qrBox.style.display = "none";
+
+        if (kioskTimer) {
+            clearInterval(kioskTimer);
+            kioskTimer = null;
+        }
+
+        kioskCode = "";
+
+        if (isStaff(user)) {
+
+            alert("هذا الحساب ليس لديه صلاحية، تواصل مع مدير النظام");
+
+            await firebase.auth().signOut();
+        }
+
+        return;
+    }
+
+    qrBox.style.display = "block";
+
+    await refreshKioskCode();
+
+    // التحقق كل دقيقة: إذا انتهى اليوم يُنشأ رمز جديد تلقائياً
+    if (!kioskTimer) {
+        kioskTimer = setInterval(refreshKioskCode, 60 * 1000);
+    }
+}
+
+// رمز عشوائي من 10 أحرف وأرقام
+function generateAccessCode() {
+
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+
+    const values = new Uint32Array(10);
+
+    crypto.getRandomValues(values);
+
+    return Array.from(values, value =>
+        chars[value % chars.length]
+    ).join("");
+}
+
+// الرمز ينتهي منتصف الليل
+function endOfToday() {
+
+    const end = new Date();
+
+    end.setHours(23, 59, 59, 999);
+
+    return end;
+}
+
+async function refreshKioskCode() {
+
+    try {
+
+        const now = new Date();
+
+        const snapshot = await db.collection(ACCESS_CODES_COLLECTION)
+            .where("expiresAt", ">", now)
+            .orderBy("expiresAt", "desc")
+            .limit(1)
+            .get();
+
+        let code;
+        let expiresAt;
+
+        if (snapshot.empty) {
+
+            code = generateAccessCode();
+            expiresAt = endOfToday();
+
+            await db.collection(ACCESS_CODES_COLLECTION)
+                .doc(code)
+                .set({
+                    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+                    createdAt: firebase.firestore.Timestamp.fromDate(now)
+                });
+
+            deleteExpiredAccessCodes();
+
+        } else {
+
+            code = snapshot.docs[0].id;
+            expiresAt = snapshot.docs[0].data().expiresAt.toDate();
+        }
+
+        if (code !== kioskCode) {
+
+            kioskCode = code;
+
+            renderKioskQr(code, expiresAt);
+        }
+
+        document.getElementById("qrError").textContent = "";
+
+    } catch (error) {
+
+        console.error("خطأ في تحديث رمز QR:", error);
+
+        document.getElementById("qrError").textContent =
+            "تعذر تحديث الرمز، تأكد من الاتصال بالإنترنت";
+    }
+}
+
+function renderKioskQr(code, expiresAt) {
+
+    const url = new URL("./", location.href);
+
+    url.search = "?code=" + code;
+
+    const qrCode = document.getElementById("qrCode");
+
+    qrCode.innerHTML = "";
+
+    new QRCode(qrCode, {
+        text: url.toString(),
+        width: 320,
+        height: 320,
+        correctLevel: QRCode.CorrectLevel.M
+    });
+
+    document.getElementById("qrExpiry").textContent =
+        "صالح حتى نهاية يوم " +
+        expiresAt.toLocaleDateString("ar-AE", {
+            weekday: "long",
+            day: "numeric",
+            month: "long"
+        });
+}
+
+// تنظيف الرموز القديمة من قاعدة البيانات
+async function deleteExpiredAccessCodes() {
+
+    try {
+
+        const snapshot = await db.collection(ACCESS_CODES_COLLECTION)
+            .where("expiresAt", "<=", new Date())
+            .get();
+
+        await Promise.all(
+            snapshot.docs.map(doc => doc.ref.delete())
+        );
+
+    } catch (error) {
+        console.error("تعذر حذف الرموز القديمة:", error);
     }
 }

@@ -1464,9 +1464,22 @@ async function handleKioskAuthChange(user) {
 
     const qrBox = document.getElementById("qrBox");
 
+    const loginBox = document.getElementById("kioskLoginBox");
+
+    // الخروج من الشاشة: فتح الرابط kiosk.html?logout
+    if (isStaff(user) && new URLSearchParams(location.search).has("logout")) {
+
+        history.replaceState(null, "", location.pathname);
+
+        await firebase.auth().signOut();
+        return;
+    }
+
     if (!isStaff(user) || !(await hasStaffAccess(user))) {
 
         qrBox.style.display = "none";
+
+        loginBox.style.display = "block";
 
         if (kioskTimer) {
             clearInterval(kioskTimer);
@@ -1484,6 +1497,9 @@ async function handleKioskAuthChange(user) {
 
         return;
     }
+
+    // بعد الدخول تعرض الشاشة رمز QR فقط بدون بيانات الحساب
+    loginBox.style.display = "none";
 
     qrBox.style.display = "block";
 

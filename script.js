@@ -761,6 +761,17 @@ function openInquiry(id) {
     document.getElementById("detailInquiry").textContent =
         record.inquiry || "";
 
+    // قد تكون الصفحة نسخة قديمة محفوظة في المتصفح بدون هذه الخانة
+    const detailRepliedBy =
+        document.getElementById("detailRepliedBy");
+
+    if (detailRepliedBy) {
+        detailRepliedBy.textContent = record.repliedBy
+            ? getStaffDisplayName(record.repliedBy) +
+              " — " + formatLogTime(record.repliedAt)
+            : "لم يتم الرد بعد";
+    }
+
     // استرجاع ملاحظات الرد المحفوظة
     document.getElementById("replyNotes").value =
         record.replyNotes || "";
@@ -825,7 +836,11 @@ async function updateInquiryStatus() {
             .doc(selectedInquiryId)
             .update({
                 status: newStatus,
-                replyNotes: notes
+                replyNotes: notes,
+
+                // اسم من رد يُسجَّل تلقائياً من حسابه (السيرفر يتحقق منه)
+                repliedBy: firebase.auth().currentUser.email,
+                repliedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
         document.getElementById("inquiryDetails")
@@ -971,6 +986,16 @@ function clearInquiryFilters() {
 // ==========================================
 // 13. تسجيل دخول الموظفين
 // ==========================================
+
+// اسم الموظف للعرض: اسم المستخدم بدون الإيميل، أو "مدير النظام"
+function getStaffDisplayName(email) {
+
+    if (email === SYSTEM_ADMIN_EMAIL) {
+        return "مدير النظام";
+    }
+
+    return email.replace(STAFF_EMAIL_DOMAIN, "");
+}
 
 // الموظف = أي حساب أضافه مدير النظام (ليس زائراً)
 function isStaff(user) {

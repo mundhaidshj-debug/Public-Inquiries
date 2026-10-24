@@ -77,10 +77,13 @@ service cloud.firestore {
         && request.resource.data.inquiry is string
         && request.resource.data.inquiry.size() < 5000;
 
+      // الرد يُسجَّل باسم صاحب الحساب فقط (لا يمكن كتابة اسم شخص آخر)
       allow update: if isStaff()
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'replyNotes'])
-        && request.resource.data.status in ['لم يتم الرد', 'تم الرد'];
+             .hasOnly(['status', 'replyNotes', 'repliedBy', 'repliedAt'])
+        && request.resource.data.status in ['لم يتم الرد', 'تم الرد']
+        && request.resource.data.repliedBy == request.auth.token.email
+        && request.resource.data.repliedAt == request.time;
 
       allow delete: if isSystemAdmin();
     }

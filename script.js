@@ -791,6 +791,24 @@ function openInquiry(id) {
           " — " + formatLogTime(record.repliedAt)
         : "لم يتم الرد بعد";
 
+    // اسم كاتب الرد تحت خانة ملاحظات الرد مباشرة
+    let replyAuthor = document.getElementById("replyAuthor");
+
+    if (!replyAuthor) {
+
+        replyAuthor = document.createElement("p");
+
+        replyAuthor.id = "replyAuthor";
+        replyAuthor.className = "reply-author";
+
+        document.getElementById("replyNotes").after(replyAuthor);
+    }
+
+    replyAuthor.textContent = record.repliedBy
+        ? "✍️ كتب الرد: " + getStaffDisplayName(record.repliedBy) +
+          " — " + formatLogTime(record.repliedAt)
+        : "✍️ لم يكتب أحد رداً بعد";
+
     // استرجاع ملاحظات الرد المحفوظة
     document.getElementById("replyNotes").value =
         record.replyNotes || "";

@@ -636,3 +636,12 @@ button:disabled {
     font-size: 13px;
     background: #a83232;
 }
+
+/* اسم كاتب الرد تحت خانة الملاحظات */
+
+.reply-author {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-weight: bold;
+    color: #6a3fa0;
+}

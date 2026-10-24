@@ -761,16 +761,35 @@ function openInquiry(id) {
     document.getElementById("detailInquiry").textContent =
         record.inquiry || "";
 
-    // قد تكون الصفحة نسخة قديمة محفوظة في المتصفح بدون هذه الخانة
-    const detailRepliedBy =
+    // إضافة خانة "آخر رد بواسطة" إذا كانت الصفحة نسخة قديمة محفوظة في المتصفح
+    let detailRepliedBy =
         document.getElementById("detailRepliedBy");
 
-    if (detailRepliedBy) {
-        detailRepliedBy.textContent = record.repliedBy
-            ? getStaffDisplayName(record.repliedBy) +
-              " — " + formatLogTime(record.repliedAt)
-            : "لم يتم الرد بعد";
+    if (!detailRepliedBy) {
+
+        const inquiryRow =
+            document.getElementById("detailInquiry").parentElement;
+
+        const row = document.createElement("tr");
+
+        const header = document.createElement("th");
+
+        header.textContent = "آخر رد بواسطة";
+
+        detailRepliedBy = document.createElement("td");
+
+        detailRepliedBy.id = "detailRepliedBy";
+
+        row.appendChild(header);
+        row.appendChild(detailRepliedBy);
+
+        inquiryRow.after(row);
     }
+
+    detailRepliedBy.textContent = record.repliedBy
+        ? getStaffDisplayName(record.repliedBy) +
+          " — " + formatLogTime(record.repliedAt)
+        : "لم يتم الرد بعد";
 
     // استرجاع ملاحظات الرد المحفوظة
     document.getElementById("replyNotes").value =
@@ -1720,16 +1739,16 @@ function renderKioskQr(code) {
 
     url.search = "?code=" + code;
 
-    const qrCode = document.getElementById("qrCode");
+    // مكتبة qrcode-generator: الحجم يُحسب تلقائياً حسب طول الرابط
+    const qr = qrcode(0, "M");
 
-    qrCode.innerHTML = "";
+    qr.addData(url.toString());
+    qr.make();
 
-    new QRCode(qrCode, {
-        text: url.toString(),
-        width: 320,
-        height: 320,
-        correctLevel: QRCode.CorrectLevel.M
-    });
+    // هامش أبيض بعرض 4 مربعات حول الرمز حتى تلتقطه كاميرا الجوال بسهولة
+    // (الهامش في هذه المكتبة بالبكسل: 4 × 8)
+    document.getElementById("qrCode").innerHTML =
+        qr.createSvgTag({ cellSize: 8, margin: 32, scalable: true });
 
     document.getElementById("qrExpiry").textContent =
         "الرمز لمتعامل واحد، ويتغير تلقائياً بعد كل مسح";

@@ -590,3 +590,26 @@ button:disabled {
     font-weight: bold;
     text-decoration: none;
 }
+
+/* سجل استخدام QR */
+
+.qr-log-table {
+    min-width: 520px;
+    margin-bottom: 0;
+}
+
+/* تنبيه صغير أسفل الشاشة */
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 14px 22px;
+    border-radius: 14px;
+    background: #245c3b;
+    color: #ffffff;
+    font-weight: bold;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}

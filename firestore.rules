@@ -17,12 +17,19 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/staff/$(request.auth.token.email)));
     }
 
-    // المتعامل يحتاج رمز QR صالح لليوم (موجود عند الاستقبال)
-    function hasValidAccessCode() {
+    function codePath(code) {
+      return /databases/$(database)/documents/accessCodes/$(code);
+    }
+
+    // المتعامل يرسل طلباً واحداً فقط بالرمز الذي مسحه (خلال 30 دقيقة)
+    // ويجب تعليم الرمز كمستخدم في نفس العملية
+    function hasValidAccessCode(inquiryId) {
       return request.resource.data.accessCode is string
         && request.resource.data.accessCode.matches('[a-z0-9]{6,32}')
-        && exists(/databases/$(database)/documents/accessCodes/$(request.resource.data.accessCode))
-        && get(/databases/$(database)/documents/accessCodes/$(request.resource.data.accessCode)).data.expiresAt > request.time;
+        && get(codePath(request.resource.data.accessCode)).data.claimedBy == request.auth.uid
+        && get(codePath(request.resource.data.accessCode)).data.claimedAt + duration.value(30, 'm') > request.time
+        && !('submittedAt' in get(codePath(request.resource.data.accessCode)).data)
+        && getAfter(codePath(request.resource.data.accessCode)).data.inquiryId == inquiryId;
     }
 
     match /staff/{email} {
@@ -34,8 +41,29 @@ service cloud.firestore {
     match /accessCodes/{code} {
       allow get: if request.auth != null;
       allow list: if isStaff();
+
       allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['expiresAt', 'createdAt'])
         && request.resource.data.expiresAt is timestamp;
+
+      // 1) حجز الرمز عند المسح (لأول شخص فقط)
+      // 2) تعليمه كمستخدم عند إرسال الطلب
+      allow update: if request.auth != null && (
+        (!('claimedBy' in resource.data)
+          && resource.data.expiresAt > request.time
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['claimedBy', 'claimedAt'])
+          && request.resource.data.claimedBy == request.auth.uid
+          && request.resource.data.claimedAt == request.time)
+        ||
+        (resource.data.claimedBy == request.auth.uid
+          && !('submittedAt' in resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['submittedAt', 'inquiryId'])
+          && request.resource.data.submittedAt == request.time
+          && existsAfter(/databases/$(database)/documents/inquiries/$(request.resource.data.inquiryId)))
+      );
+
       allow delete: if isStaff();
     }
 
@@ -43,7 +71,7 @@ service cloud.firestore {
       allow read: if isStaff();
 
       allow create: if request.auth != null
-        && (isStaff() || hasValidAccessCode())
+        && (isStaff() || hasValidAccessCode(inquiryId))
         && request.resource.data.status in ['لم يتم الرد', 'تم الرد']
         && request.resource.data.name is string
         && request.resource.data.inquiry is string

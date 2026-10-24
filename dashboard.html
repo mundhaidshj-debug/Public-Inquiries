@@ -8,7 +8,7 @@
 
     <title>صفحة متابعة خدمة المتعاملين</title>
 
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 
 <body>
@@ -102,6 +102,32 @@
                 </div>
 
                 <ul id="staffList" class="staff-list"></ul>
+
+            </div>
+
+            <!-- سجل استخدام رمز QR (لمدير النظام فقط) -->
+            <div class="admin-box" id="qrLogBox" style="display:none;">
+
+                <h3>سجل استخدام رمز QR (آخر 50)</h3>
+
+                <div class="table-container">
+
+                    <table class="qr-log-table">
+
+                        <thead>
+                            <tr>
+                                <th>وقت المسح</th>
+                                <th>الحالة</th>
+                                <th>وقت الإرسال</th>
+                                <th>المتعامل</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="qrLogBody"></tbody>
+
+                    </table>
+
+                </div>
 
             </div>
 
@@ -322,7 +348,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=11"></script>
 
 </body>
 </html>

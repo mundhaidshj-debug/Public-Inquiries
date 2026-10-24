@@ -1899,6 +1899,46 @@ function renderQrLog(docs) {
     });
 }
 
+// مسح السجل: حذف الرموز الممسوحة
+// (ما عدا رمز متعامل ما زال يعبّئ طلبه خلال الـ 30 دقيقة)
+async function clearQrLog() {
+
+    const confirmed = confirm("هل تريدين مسح سجل استخدام رمز QR؟");
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+
+        const snapshot = await db.collection(ACCESS_CODES_COLLECTION)
+            .orderBy("claimedAt", "desc")
+            .get();
+
+        const activeSince =
+            new Date(Date.now() - CLAIM_MINUTES * 60 * 1000);
+
+        const finished = snapshot.docs.filter(doc => {
+
+            const data = doc.data();
+
+            return data.submittedAt ||
+                !data.claimedAt ||
+                data.claimedAt.toDate() <= activeSince;
+        });
+
+        await Promise.all(
+            finished.map(doc => doc.ref.delete())
+        );
+
+        showToast("🗑️ تم مسح السجل");
+
+    } catch (error) {
+        console.error("تعذر مسح السجل:", error);
+        alert("تعذر مسح السجل");
+    }
+}
+
 function formatLogTime(timestamp) {
 
     if (!timestamp) {

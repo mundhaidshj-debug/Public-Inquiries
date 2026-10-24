@@ -8,7 +8,7 @@
 
     <title>صفحة متابعة خدمة المتعاملين</title>
 
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 
 <body>
@@ -108,7 +108,16 @@
             <!-- سجل استخدام رمز QR (لمدير النظام فقط) -->
             <div class="admin-box" id="qrLogBox" style="display:none;">
 
-                <h3>سجل استخدام رمز QR (آخر 50)</h3>
+                <!-- السجل مخفي افتراضياً ويُفتح بالضغط على العنوان -->
+                <details class="qr-log-details">
+
+                <summary>سجل استخدام رمز QR (آخر 50)</summary>
+
+                <button type="button"
+                        class="clear-log-button"
+                        onclick="clearQrLog()">
+                    مسح السجل
+                </button>
 
                 <div class="table-container">
 
@@ -128,6 +137,8 @@
                     </table>
 
                 </div>
+
+                </details>
 
             </div>
 
@@ -353,7 +364,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
-    <script src="script.js?v=13"></script>
+    <script src="script.js?v=14"></script>
 
 </body>
 </html>
